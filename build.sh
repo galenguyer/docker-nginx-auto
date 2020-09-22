@@ -39,8 +39,19 @@ docker build \
         -t "$registry"/nginx-autoindex:latest \
         -f autoindex.Dockerfile .
 
+docker build \
+        --build-arg NGINX_VER="$nginx_version" \
+        --build-arg CORE_COUNT="$core_count" \
+        -t "$registry"/nginx-fancyindex:"$nginx_version" \
+        -t "$registry"/nginx-fancyindex:latest \
+        -f fancyindex.Dockerfile .
+
 # if a registry is specified, push to it
 if [ "$registry" != "local" ]; then
 	docker push "$registry"/nginx-simple:"$nginx_version"
 	docker push "$registry"/nginx-simple:latest
+	docker push "$registry"/nginx-autoindex:"$nginx_version"
+	docker push "$registry"/nginx-autoindex:latest
+	docker push "$registry"/nginx-fancyindex:"$nginx_version"
+	docker push "$registry"/nginx-fancyindex:latest
 fi
