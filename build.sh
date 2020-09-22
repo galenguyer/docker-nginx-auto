@@ -7,36 +7,33 @@ set -o errexit
 # exit if required variables aren't set
 set -o nounset
 
-#set environment variables
-mainline_version="1.19.2"
-stable_version="1.18.0"
+# if no registry is provided, tag image as "local" registry
+registry="${REGISTRY:-local}"
+
+# retrieve latest nginx version
+nginx_mainline="$(curl -s 'http://nginx.org/download/' | grep -oP 'href="nginx-\K[0-9]+\.[0-9]+\.[0-9]+' | sort -t. -rn -k1,1 -k2,2 -k3,3 | head -1)"
+
+# if no version is specified, use the mainline version
+nginx_version="${1:-$nginx_mainline}"
+
+# pass core count into container for build process
 core_count="$(grep -c ^processor /proc/cpuinfo)"
 
-# create docker mainline image
+# if no arguments are passed, display usage info and exit
+if [ "$#" -ne 1 ]; then
+	echo "No nginx version provided. Falling back to mainline version $nginx_version."
+fi
+
+# create docker image
 docker build \
-	--build-arg NGINX_VER="$mainline_version" \
-	--build-arg CORE_COUNT="$core_count" \
-	-t nginx:latest \
-        -t docker.galenguyer.com/nginx/nginx:latest \
-        -t docker.galenguyer.com/nginx/nginx:"$mainline_version" \
-	-t nginx-mainline:latest \
-        -t docker.galenguyer.com/nginx/nginx-mainline:latest \
-        -t docker.galenguyer.com/nginx/nginx-mainline:"$mainline_version" \
-        -f Dockerfile .
+        --build-arg NGINX_VER="$nginx_version" \
+        --build-arg CORE_COUNT="$core_count" \
+        -t "$registry"/nginx-simple:"$nginx_version" \
+        -t "$registry"/nginx-simple:latest \
+        -f simple.Dockerfile .
 
-# create docker stable image
-docker build \
-	--build-arg NGINX_VER="$stable_version" \
-	--build-arg CORE_COUNT="$core_count" \
-	-t nginx-stable:latest \
-        -t docker.galenguyer.com/nginx/nginx-stable:latest \
-        -t docker.galenguyer.com/nginx/nginx-stable:"$stable_version" \
-        -f Dockerfile .
-
-docker push docker.galenguyer.com/nginx/nginx:latest
-docker push docker.galenguyer.com/nginx/nginx:"$mainline_version"
-docker push docker.galenguyer.com/nginx/nginx-mainline:latest
-docker push docker.galenguyer.com/nginx/nginx-mainline:"$mainline_version"
-docker push docker.galenguyer.com/nginx/nginx-stable:latest
-docker push docker.galenguyer.com/nginx/nginx-stable:"$stable_version"
-
+# if a registry is specified, push to it
+if [ "$registry" != "local" ]; then
+	docker push "$registry"/nginx-simple:"$nginx_version"
+	docker push "$registry"/nginx-simple:latest
+fi
