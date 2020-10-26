@@ -75,5 +75,5 @@ COPY --from=nginx /usr/sbin/nginx /usr/sbin/nginx
 RUN apk add curl
 HEALTHCHECK CMD curl --fail http://localhost/ || exit 1
 
-# configure entrypoint
-ENTRYPOINT ["/usr/sbin/nginx","-g","daemon off;"]
+# configure CMD
+CMD ["/usr/sbin/nginx","-g","daemon off;"]
